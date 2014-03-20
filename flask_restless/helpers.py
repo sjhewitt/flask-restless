@@ -445,7 +445,8 @@ def evaluate_functions(session, model, functions):
     return dict(zip(funcnames, evaluated))
 
 
-def query_by_primary_key(session, model, primary_key_value, primary_key=None):
+def query_by_primary_key(session, model, primary_key_value, primary_key=None,
+                         primary_key_separator='|'):
     """Returns a SQLAlchemy query object containing the result of querying
     `model` for instances whose primary key has the value `primary_key_value`.
 
@@ -455,9 +456,21 @@ def query_by_primary_key(session, model, primary_key_value, primary_key=None):
     Presumably, the returned query should have at most one element.
 
     """
-    pk_name = primary_key or primary_key_name(model)
+    pk_names = primary_key or primary_key_names(model)
+    if not isinstance(pk_names, list):
+        pk_names = [pk_names]
+    pk_values = primary_key_value.split(primary_key_separator)
+    pk_parts = zip(pk_names, pk_values)
+
+    def reducer(a, b):
+        pk_name, pk_value = b
+        expr = getattr(model, pk_name) == pk_value
+        if a is not None:
+            return a and expr
+        return expr
+
     query = session_query(session, model)
-    return query.filter(getattr(model, pk_name) == primary_key_value)
+    return query.filter(reduce(reducer, pk_parts, None))
 
 
 def get_by(session, model, primary_key_value, primary_key=None):
