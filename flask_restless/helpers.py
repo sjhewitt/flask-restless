@@ -459,14 +459,14 @@ def query_by_primary_key(session, model, primary_key_value, primary_key=None,
     pk_names = primary_key or primary_key_names(model)
     if not isinstance(pk_names, list):
         pk_names = [pk_names]
-    pk_values = primary_key_value.split(primary_key_separator)
+    pk_values = primary_key_value.split(primary_key_separator, len(pk_names) - 1)
     pk_parts = zip(pk_names, pk_values)
 
     def reducer(a, b):
         pk_name, pk_value = b
         expr = getattr(model, pk_name) == pk_value
         if a is not None:
-            return a and expr
+            return expr & a
         return expr
 
     query = session_query(session, model)
