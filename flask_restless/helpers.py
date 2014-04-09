@@ -31,6 +31,10 @@ from sqlalchemy.sql.expression import _BinaryExpression
 from sqlalchemy.sql.expression import ColumnElement
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 
+from geoalchemy2.elements import WKBElement
+from geoalchemy2.shape import to_shape
+from geojson.mapping import to_mapping
+
 #: Names of attributes which should definitely not be considered relations when
 #: dynamically computing a list of relations of a SQLAlchemy model.
 RELATION_BLACKLIST = ('query', 'query_class', '_sa_class_manager',
@@ -330,6 +334,9 @@ def to_dict(instance, deep=None, exclude=None, include=None,
             result[key] = value.isoformat()
         elif isinstance(value, uuid.UUID):
             result[key] = str(value)
+        elif isinstance(value, WKBElement):
+            shape = to_shape(value)
+            result[key] = to_mapping(shape)
         elif key not in column_attrs and is_mapped_class(type(value)):
             result[key] = to_dict(value)
     # recursively call _to_dict on each of the `deep` relations
